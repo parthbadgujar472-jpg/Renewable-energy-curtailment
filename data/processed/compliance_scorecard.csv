@@ -1,0 +1,7 @@
+region,state,total_events_reported,completeness_pct,cross_validation_match_pct,nlp_classification_confidence_pct,avg_publication_delay_hrs,timeliness_score,composite_compliance_score,compliance_grade
+Southern Region,Andhra Pradesh,102,100.0,91.2,100.0,3.4,72.8,89.2,A (Compliant)
+Southern Region,Karnataka,108,100.0,82.4,100.0,0.6,95.2,93.3,A (Compliant)
+Southern Region,Tamil Nadu,228,100.0,88.6,100.0,4.9,60.8,84.8,B (Partially Compliant)
+Western Region,Gujarat,96,100.0,88.5,100.0,0.9,92.8,94.4,A (Compliant)
+Western Region,Madhya Pradesh,104,100.0,87.5,100.0,3.4,72.8,88.1,A (Compliant)
+Western Region,Rajasthan,112,100.0,88.4,100.0,0.6,95.2,95.1,A (Compliant)
