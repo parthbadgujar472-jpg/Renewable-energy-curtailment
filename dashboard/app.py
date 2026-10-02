@@ -12,6 +12,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from agents.analyst.synthetic_data_generator import generate_synthetic_data
 from agents.analyst.classifier import CurtailmentRemarkClassifier, run_classifier_pipeline
 from agents.warden.compliance import compute_compliance_scorecard
+from chatbot.ui import render_chatbot_tab
 
 st.set_page_config(
     page_title="RE Curtailment Analytics & Regulatory Compliance Dashboard",
@@ -398,6 +399,107 @@ st.markdown("""
     ::-webkit-scrollbar-track { background: var(--bg-abyss); }
     ::-webkit-scrollbar-thumb { background: var(--border-dim); border-radius: 3px; }
     ::-webkit-scrollbar-thumb:hover { background: var(--border-lit); }
+
+    /* ── Chatbot Conversation Text (Black Font Override) ──── */
+    [data-testid="stChatMessage"],
+    [data-testid="stChatMessage"] p,
+    [data-testid="stChatMessage"] span,
+    [data-testid="stChatMessage"] div,
+    [data-testid="stChatMessage"] label,
+    [data-testid="stChatMessage"] h1,
+    [data-testid="stChatMessage"] h2,
+    [data-testid="stChatMessage"] h3,
+    [data-testid="stChatMessage"] h4,
+    [data-testid="stChatMessage"] h5,
+    [data-testid="stChatMessage"] h6,
+    [data-testid="stChatMessage"] li,
+    [data-testid="stChatMessage"] ol,
+    [data-testid="stChatMessage"] ul,
+    [data-testid="stChatMessage"] strong,
+    [data-testid="stChatMessage"] b,
+    [data-testid="stChatMessage"] em,
+    [data-testid="stChatMessage"] a,
+    [data-testid="stChatMessage"] blockquote,
+    [data-testid="stChatMessage"] blockquote *,
+    [data-testid="stChatMessage"] [data-testid="stMarkdownContainer"],
+    [data-testid="stChatMessage"] [data-testid="stMarkdownContainer"] *,
+    [data-testid="stChatMessageContent"],
+    [data-testid="stChatMessageContent"] *,
+    .stChatMessage,
+    .stChatMessage p,
+    .stChatMessage span,
+    .stChatMessage div,
+    .stChatMessage * {
+        color: #000000 !important;
+        -webkit-text-fill-color: #000000 !important;
+    }
+
+    /* Chatbot Expander & Table / Textual Outputs */
+    [data-testid="stChatMessage"] [data-testid="stExpander"] summary,
+    [data-testid="stChatMessage"] [data-testid="stExpander"] summary *,
+    [data-testid="stChatMessage"] [data-testid="stExpander"] div,
+    [data-testid="stChatMessage"] [data-testid="stExpander"] p,
+    [data-testid="stChatMessage"] [data-testid="stExpander"] span,
+    [data-testid="stChatMessage"] table,
+    [data-testid="stChatMessage"] table *,
+    [data-testid="stChatMessage"] th,
+    [data-testid="stChatMessage"] td,
+    [data-testid="stChatMessage"] [data-testid="stTable"] *,
+    [data-testid="stChatMessage"] [data-testid="stDataFrame"] *,
+    [data-testid="stChatMessage"] code,
+    [data-testid="stChatMessage"] pre,
+    [data-testid="stChatMessage"] pre * {
+        color: #000000 !important;
+        -webkit-text-fill-color: #000000 !important;
+    }
+
+    /* Chat Input Text */
+    [data-testid="stChatInput"] textarea,
+    [data-testid="stChatInput"] input,
+    [data-testid="stChatInputContainer"] textarea,
+    div[data-baseweb="base-input"] textarea,
+    .stChatInput textarea,
+    .stChatInput input {
+        color: #000000 !important;
+        -webkit-text-fill-color: #000000 !important;
+    }
+
+    /* Chat Input Placeholder */
+    [data-testid="stChatInput"] textarea::placeholder,
+    [data-testid="stChatInput"] input::placeholder,
+    [data-testid="stChatInputContainer"] textarea::placeholder,
+    div[data-baseweb="base-input"] textarea::placeholder,
+    .stChatInput textarea::placeholder,
+    .stChatInput input::placeholder {
+        color: #000000 !important;
+        -webkit-text-fill-color: #000000 !important;
+        opacity: 0.65 !important;
+    }
+
+    /* ── Suggested Question Chips / Buttons (Black Font Override) ── */
+    div[data-testid="column"] .stButton > button,
+    div[data-testid="column"] .stButton > button *,
+    div[data-testid="column"] .stButton > button p,
+    div[data-testid="column"] .stButton > button span,
+    div[data-testid="stHorizontalBlock"] .stButton > button,
+    div[data-testid="stHorizontalBlock"] .stButton > button *,
+    div[data-testid="stHorizontalBlock"] .stButton > button p,
+    div[data-testid="stHorizontalBlock"] .stButton > button span,
+    .stButton > button,
+    .stButton > button *,
+    .stButton > button p,
+    .stButton > button span {
+        color: #000000 !important;
+        -webkit-text-fill-color: #000000 !important;
+    }
+
+    .stButton > button:hover,
+    .stButton > button:hover *,
+    .stButton > button:hover p,
+    .stButton > button:hover span {
+        color: #000000 !important;
+        -webkit-text-fill-color: #000000 !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -452,11 +554,26 @@ def load_all_data():
         events_df = pd.DataFrame()
         
     cea_df = pd.DataFrame()
-    compliance_df = pd.DataFrame()
+    comp_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data", "processed", "compliance_scorecard.csv"))
+    if os.path.exists(comp_path):
+        compliance_df = pd.read_csv(comp_path)
+    else:
+        compliance_df = pd.DataFrame()
     metrics = {}
     return cea_df, events_df, compliance_df, metrics
 
 cea_df, events_df, compliance_df, metrics = load_all_data()
+
+@st.cache_resource
+def get_trained_classifier():
+    clf = CurtailmentRemarkClassifier()
+    synth_csv = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "data", "processed", "synthetic_curtailment_events.csv"))
+    if os.path.exists(synth_csv):
+        train_df = pd.read_csv(synth_csv)
+        clf.train_and_evaluate(train_df)
+    return clf
+
+classifier = get_trained_classifier()
 
 # Header Section
 st.markdown("""
@@ -566,10 +683,11 @@ with c4:
 st.markdown("<div style='margin-bottom: 24px;'></div>", unsafe_allow_html=True)
 
 # Main Tabular Dashboard Container
-tab1, tab2, tab3 = st.tabs([
+tab1, tab2, tab3, tab4 = st.tabs([
     "Generation & Curtailment",
     "Regional Cause Breakdown",
-    "State-level Deep Dive"
+    "State-level Deep Dive",
+    "🤖 AI Energy Assistant"
 ])
 
 # ----------------------------------------------------
@@ -668,6 +786,22 @@ with tab3:
             state_table['Avg_Curtailment_Pct'] = state_table['Avg_Curtailment_Pct'].apply(lambda x: f"{x:.2f}%")
             
             st.dataframe(state_table.sort_values(by='Total_Curtailment_MW', ascending=False), use_container_width=True, hide_index=True)
+
+# ----------------------------------------------------
+# TAB 4: AI Energy Intelligence Assistant
+# ----------------------------------------------------
+with tab4:
+    active_filters_dict = {
+        "region": selected_region,
+        "state": selected_state,
+        "cause": selected_cause
+    }
+    render_chatbot_tab(
+        events_df=events_df,
+        compliance_df=compliance_df,
+        active_filters=active_filters_dict,
+        classifier=classifier
+    )
 
 st.markdown("---")
 st.markdown("""
