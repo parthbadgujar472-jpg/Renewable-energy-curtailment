@@ -5,3 +5,6 @@ plotly
 openpyxl
 scikit-learn
 joblib
+google-generativeai
+groq
+openai

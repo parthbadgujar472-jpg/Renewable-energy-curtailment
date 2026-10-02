@@ -15,10 +15,24 @@ class LLMProvider:
         self.client = None
         self._initialize_provider()
 
+    @staticmethod
+    def _get_credential(key_name: str) -> Optional[str]:
+        """Checks os.getenv and streamlit st.secrets for the given key."""
+        val = os.getenv(key_name)
+        if val:
+            return val.strip()
+        try:
+            import streamlit as st
+            if hasattr(st, "secrets") and key_name in st.secrets:
+                return str(st.secrets[key_name]).strip()
+        except Exception:
+            pass
+        return None
+
     def _initialize_provider(self):
-        """Detects available environment variables for OpenAI, Gemini, or Groq."""
+        """Detects available environment variables or st.secrets for OpenAI, Gemini, or Groq."""
         # 1. Check OpenAI
-        openai_key = os.getenv("OPENAI_API_KEY")
+        openai_key = self._get_credential("OPENAI_API_KEY")
         if openai_key:
             try:
                 import openai
@@ -30,7 +44,7 @@ class LLMProvider:
                 pass
 
         # 2. Check Gemini
-        gemini_key = os.getenv("GEMINI_API_KEY")
+        gemini_key = self._get_credential("GEMINI_API_KEY")
         if gemini_key:
             try:
                 import google.generativeai as genai
@@ -43,7 +57,7 @@ class LLMProvider:
                 pass
 
         # 3. Check Groq
-        groq_key = os.getenv("GROQ_API_KEY")
+        groq_key = self._get_credential("GROQ_API_KEY")
         if groq_key:
             try:
                 from groq import Groq
